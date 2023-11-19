@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ケッペンの気候区分</title>
+    <style>
+        #errormsg {
+            color: red;
+        }
+
+	</style>
+</head>
+
+<body>
+    <h1>ケッペンの気候区分判別</h1>
+
+    <button onclick="document.forms.main.reset();;">リセット</button>
+
+    <form id="main">
+        <h3>気温</h3>
+        <div>
+            <label for="temp_max">最暖月気温</label>
+            <input class="inf req" type="number" min="-273" id="temp_max">
+        </div>
+        <div>
+            <label for="temp_min">最寒月気温</label>
+            <input class="inf req" type="number" min="-273" id="temp_min">
+        </div>
+        <div>
+            <label for="temp_ave">年平均気温</label>
+            <input class="inf req" type="number" min="-273" id="temp_ave">
+        </div>
+        <div>
+            <label for="temp_10">10℃以上の月が</label>
+            <input type="radio" name="temp_10" value="b" checked> 4ヶ月以上
+            <input type="radio" name="temp_10" value="cd"> 3ヶ月以下
+        </div>
+
+        <h3>降水</h3>
+        <div>
+            <label for="prec_max">最多雨月降水量</label>
+            <input class="inf req" type="number" min="0" id="prec_max">
+        </div>
+        <div>
+            <label for="prec_max_month">最多雨月が</label>
+            <input type="radio" name="prec_max_month" value="s" checked> 夏
+            <input type="radio" name="prec_max_month" value="w"> 冬
+        </div>
+        <div>
+            <label for="perc_min">最少雨月降水量</label>
+            <input class="inf req" type="number" min="0" id="prec_min">
+        </div>
+        <div>
+            <label for="perc_ave">年降水量</label>
+            <input class="inf req" type="number" min="0" id="prec_year">
+        </div>
+    </form>
+
+    <br>
+
+    <div>
+        <button onclick="run_clicked();">判定</button>
+        <b><label id="errormsg"></label></b>
+    </div>
+
+    <div>
+        <font size="3"><b><label id="output"></label></b></font>
+        <label id="detail"></label>
+    </div>
+
+    <script>
+        function run_clicked() {
+            const errormsg = document.getElementById("errormsg");
+            errormsg.innerText = "";
+
+            const output = document.getElementById("output");
+            output.innerText = "";
+            const detail = document.getElementById("detail");
+            detail.innerText = "";
+
+            const ItemList = document.getElementsByClassName("inf");
+
+            const names = {
+                "Af":"熱帯雨林気候","Am":"熱帯モンスーン気候","Aw":"サバナ気候",
+                "BW":"砂漠気候","BS":"ステップ気候",
+                "CA":"温暖湿潤気候","Cf":"西岸海洋性気候","Cw":"温暖冬季少雨気候","Cs":"地中海性気候",
+                "Df":"亜寒帯湿潤気候","Dw":"亜寒帯冬季少雨気候","Ds":"高地地中海性気候",
+                "ET":"ツンドラ気候","EF":"氷雪気候"
+            }
+
+            for(let i = 0; i < ItemList.length; i++) {
+                if (ItemList.item(i).className == "inf req" & ItemList.item(i).value == ""){
+                    console.log("空欄箇所：",ItemList.item(i));
+                    errormsg.innerText = "空欄箇所があります";
+                    return;
+                }
+            }
+
+            //気温
+            const temp_max = document.getElementById("temp_max").value;
+            const temp_min = document.getElementById("temp_min").value;
+            const temp_ave = document.getElementById("temp_ave").value;
+            const temp_10 = document.forms.main.temp_10.value;
+            //降水量
+            const prec_max = document.getElementById("prec_max").value;
+            const prec_min = document.getElementById("prec_min").value;
+            const prec_year = document.getElementById("prec_year").value;
+            const prec_max_month = document.forms.main.prec_max_month.value;
+
+            //気候帯の分類
+            let cln = "N"
+
+            // 季節
+            let season = "f"
+            if (prec_max_month == "w" && 3*prec_min <= prec_max){
+                season = "s"
+            }
+            if (prec_max_month == "s" && 10*prec_min <= prec_max){
+                season = "w"
+            }
+
+            //乾燥限界値
+            const drylimit = {"s": 20*temp_ave,
+                     "f": 20*temp_ave+140,//20(t+7)
+                     "w": 20*temp_ave+280//20(t+14)
+                    }[season];
+            console.log(temp_ave,drylimit,season)
+
+            //温度による細分化
+            let temp = "a"
+            if (temp_max >= 22){
+                temp = "a"
+            }
+            else if (temp_10 == "b"){
+                temp = "b"
+            }
+            else if (temp_min >= -38){
+                temp = "c"
+            }
+            else{
+                temp = "d"
+            }
+
+            //その他区分用文字
+            let sub = ""
+
+            //気候帯
+            if (temp_max < 10){
+                cln = "E"
+                if (temp_max < 0){
+                    sub = "F"
+                }
+                else{
+                    sub = "T"
+                }
+            }
+            else if (prec_year < drylimit){
+                cln = "B"
+                if (prec_year < 0.5*drylimit){
+                    sub = "W"
+                }
+                else{
+                    sub = "S"
+                }
+
+                if (temp_ave >= 18){
+                    temp = "h"
+                }
+                else{
+                    temp = "k"
+                }
+            }
+            else if (temp_min >= 18){
+                cln = "A"
+                if (prec_min >= 60){
+                    season = "f"
+                }
+                else if (temp_min > 100-0.04*prec_year){
+                    season = "m"
+                }
+                else{
+                    season = "w"
+                }
+            }
+            else if (temp_min >= -3 && temp_min < 18){
+                cln = "C"
+            }
+            else if (temp_min < -3){
+                cln = "D"
+            }
+            else{
+                console.log("エラー：どの気候帯にも分類されませんでした")
+            }
+
+            const climate = {
+                A: "A" + season,
+                B: "B" + sub + temp,
+                C: "C" + season + temp,
+                D: "D" + season + temp,
+                E: "E" + sub
+                }[cln];
+
+            const cliname = climate == "Cfa" ? "CA" : climate.slice(0,2)
+
+            output.innerText = `${climate}(${names[cliname]})`;
+            detail.innerText = `乾燥限界値：${drylimit} 最多雨季節:${season}`
+        }
+    </script>
+</body>
+
+</html>
